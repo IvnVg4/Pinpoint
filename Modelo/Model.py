@@ -214,3 +214,65 @@ for p in pistas:
     
     
 """
+
+class Partida:
+    def __init__(self) -> None:
+        self.idioma : str = ""
+        self.normalizador : Normalizador = None
+        self.wordnet : GestorWordNet = None
+        self.respuesta: str = ""
+        self.pistas: list[Pista] = []
+        self.pistas_mostradas: int = 0
+        self.intentos: int = 0
+        self.estado: EstadoJuego = EstadoJuego.JUGANDO
+
+    def iniciar_juego(self, idioma: str) -> None:
+        self.idioma = idioma
+        self.normalizador = Normalizador(self.idioma)
+        self.wordnet = GestorWordNet(self.idioma)
+
+        synset = self.wordnet.elegir_categoria()
+        self.respuesta = self.wordnet.nombres(synset)[0]
+        self.pistas = self.wordnet.construir_pistas(synset)
+
+        self.pistas_mostradas = 0
+        self.intentos = 0
+        self.estado = EstadoJuego.JUGANDO
+
+    def obtener_pista(self) -> Pista:
+        if self.pistas_mostradas < len(self.pistas):
+            pista = self.pistas[self.pistas_mostradas]
+            self.pistas_mostradas += 1
+            return pista
+        return None
+
+    def verificar_respuesta(self, respuesta:str) -> bool:
+        if self.estado != EstadoJuego.JUGANDO:
+            return False
+
+        self.intentos +=1
+
+        respuesta_norm = self.normalizador.normalizar(respuesta)
+        correcta_norm = self.normalizador.normalizar(self.respuesta)
+
+        if respuesta_norm == correcta_norm:
+            self.estado = EstadoJuego.GANADO
+            return True
+        else:
+            if self.intentos >=5:
+                self.estado = EstadoJuego.PERDIDO
+            return False
+
+    def obtener_estado(self) -> dict:
+        return {
+            "idioma" : self.idioma,
+            "estado" : self.estado.value,
+            "intentos" : self.intentos,
+            "pistas_mostradas": self.pistas_mostradas,
+            "respuesta" : self.respuesta if self.estado != EstadoJuego.JUGANDO else None
+    }
+
+    def mostrar_intentos(self, intentos=None):
+        return f"Intentos realizados: {self.intentos}"
+    
+    
