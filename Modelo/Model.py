@@ -19,13 +19,13 @@ class EstadoJuego(Enum):
     GANADO = "ganado"
     PERDIDO = "perdido"
 
-    
+    #Inicializamos pista que conta de la palabra y que tipo de relacion tiene con la respuesta (hiper,hipo o sino)
 class Pista:
     def __init__(self, texto: str, relacion: str) -> None:
         self.texto = texto.strip()
         self.relacion = relacion.strip()
         
-        
+    #Clase que se encarga de normalizar las palabras con las que vamos a trabajar o evaluar
 class Normalizador:
     def __init__(self, idioma: str) -> None:
         idiomas = {"spa":"spanish", "eng":"english"}
@@ -56,11 +56,13 @@ class Normalizador:
             for caracter in texto
             if caracter not in puntuacion
         )
-    
+
+    #tokenizamos con nltk
     def tokens(self, texto: str) -> list[str]:
         idiomas = {"spa":"spanish", "eng":"english"}
         return word_tokenize(texto, language = idiomas [self.idioma])
-    
+
+    #normalizamos las palabras convinando las funciones previamente declaradas
     def normalizar(self, texto: str) -> str:
         texto = texto.lower()
         texto = self.quitar_acentos(texto)
@@ -102,6 +104,7 @@ class GestorWordNet:
             raise ValueError(f"Idioma no soportado: '{idioma}'. Usa 'spa' o 'eng'")
         self.idioma = idioma
 
+        #Elige una categoria al azar
     def elegir_categoria(self):
         elegibles = list(wn.all_synsets(pos="n"))
         random.shuffle(elegibles)
@@ -145,7 +148,8 @@ class GestorWordNet:
         for hiponimo in synset.hyponyms():
             hiponimos.extend(self.nombres(hiponimo))
         return hiponimos
-    
+
+    #Construye las pistas pistas que se mostraran, desde la mas general hasta la mas cercana
     def construir_pistas(self, synset) -> list[Pista]:
         nombres = self.nombres(synset)
         if not nombres:
@@ -168,15 +172,20 @@ class GestorWordNet:
         if not hiper or not hipo or not sino:
             raise ValueError(f"'{synset.name()}' no tiene las tres relaciones en '{self.idioma}'")
 
+        #Armado ideal 2 hiperonimos, 2 hiponimos y 1 sinonimo
         elegidos_hiper = [hiper[0], hiper[-1]] if len(hiper) > 1 else [hiper[0]]
         elegidos_hipo = hipo[:2]
         elegidos_sino = sino[:1]
 
+        #Agregamos en listas los sobrantes por si a caso los ocupamos
         sobrantes_hipo = hipo[len(elegidos_hipo):]
         sobrantes_sino = sino[len(elegidos_sino):]
         sobrantes_hiper = [h for h in hiper if h not in elegidos_hiper]
-        faltan = 5 - len(elegidos_hiper) - len(elegidos_hipo) - len(elegidos_sino)
 
+        #Verificamos si tenemos las 5 pistas para poder jugar
+        faltan = 5 - len(elegidos_hiper) - len(elegidos_hipo) - len(elegidos_sino)
+        
+        #Agregamos "sustitutos" para llenar los espacios vacios
         while faltan > 0 and (sobrantes_hipo or sobrantes_sino or sobrantes_hiper):
             if sobrantes_hipo:
                 elegidos_hipo.append(sobrantes_hipo.pop(0))
@@ -185,7 +194,7 @@ class GestorWordNet:
             else:
                 elegidos_hiper.insert(-1, sobrantes_hiper.pop(0))
             faltan -= 1
-
+    
         if faltan > 0:
             raise ValueError(f"'{synset.name()}' no alcanza para 5 pistas en '{self.idioma}'")
 
