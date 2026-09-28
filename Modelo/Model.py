@@ -124,6 +124,8 @@ class GestorWordNet:
 
         raise RuntimeError("Ninguna categoria del banco pudo generar 5 pistas")
 
+    
+    #Limpia los nombres dentro del synset para generar limpiamente las palabras para que se muestren en las pistas o respuestas
     def nombres(self, synset) -> list[str]:
         nombres = []
         for lema in synset.lemma_names(self.idioma):
@@ -132,9 +134,11 @@ class GestorWordNet:
                 nombres.append(nombre)
         return nombres
 
+    #Genera los sinonimos eliminando el primer elemento de la lista
     def sinonimos(self, synset) -> list[str]:
         return self.nombres(synset)[1:]
 
+    #Genera los hiperonimos
     def hiperonimos(self, synset) -> list[str]:
         directos = synset.hypernyms()
         lejanos = [abuelo for padre in directos for abuelo in padre.hypernyms()]
@@ -143,13 +147,14 @@ class GestorWordNet:
         for grupo in lejanos + directos:
             hiperonimos.extend(self.nombres(grupo))
         return hiperonimos
-
+        
+    #Gnera hiponimos del synset
     def hiponimos(self, synset) -> list[str]:
         hiponimos = []
         for hiponimo in synset.hyponyms():
             hiponimos.extend(self.nombres(hiponimo))
         return hiponimos
-
+    
     def construir_pistas(self, synset) -> list[Pista]:
         nombres = self.nombres(synset)
         if not nombres:
