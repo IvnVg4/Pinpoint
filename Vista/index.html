@@ -95,6 +95,26 @@
             min-height: 50px;
         }
 
+        .pista-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #526475;
+        }
+
+        .pista-item:last-child {
+            border-bottom: none;
+        }
+
+        .pista-numero {
+            font-weight: bold;
+        }
+
+        .pista-relacion {
+            display: block;
+            font-size: 14px;
+            color: #d0d3d4;
+            margin-top: 4px;
+        }
+
         /* Tipo de relacion de la pista */
         #relacion-pista {
             font-size: 14px;
@@ -171,9 +191,6 @@
             <!-- Aqui se coloca la pista -->
             <div id="pista"></div>
 
-            <!-- Indica si es sinonimo, hiperonimo o hiponimo -->
-            <p id="relacion-pista"></p>
-
             <!-- Entrada de la respuesta -->
             <input
                 type="text"
@@ -209,6 +226,105 @@
         </div>
 
     </div>
+
+    <script>
+        const inicio = document.getElementById("inicio");
+        const zonaJuego = document.getElementById("zona-juego");
+        const idioma = document.getElementById("idioma");
+        const pista = document.getElementById("pista");
+        const numeroPista = document.getElementById("numero-pista");
+        const respuesta = document.getElementById("respuesta");
+        const mensaje = document.getElementById("mensaje");
+        const intentos = document.getElementById("intentos");
+        const estadoJuego = document.getElementById("estado-juego");
+        const respuestaFinal = document.getElementById("respuesta-final");
+        const nuevaPartida = document.getElementById("nueva-partida");
+
+        async function llamarApi(ruta, datos = {}) {
+            const resultado = await fetch(ruta, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(datos)
+            });
+            const cuerpo = await resultado.json();
+            if (!resultado.ok) throw new Error(cuerpo.error || "No se pudo completar la operación.");
+            return cuerpo;
+        }
+
+        function mostrarEstado(estado) {
+            intentos.textContent = `Intentos realizados: ${estado.intentos}`;
+            estadoJuego.textContent = estado.estado === "jugando" ? "Sigue intentando" : `Partida ${estado.estado}`;
+            if (estado.respuesta) respuestaFinal.textContent = `La respuesta era: ${estado.respuesta}`;
+            if (estado.estado !== "jugando") {
+                respuesta.disabled = true;
+                document.getElementById("responder").disabled = true;
+                nuevaPartida.hidden = false;
+            }
+        }
+
+        function mostrarPista(pistaActual, cantidad) {
+            if (!pistaActual) {
+                numeroPista.textContent = "No quedan más pistas.";
+                return;
+            }
+            numeroPista.textContent = `Pista ${cantidad}`;
+
+            const elementoPista = document.createElement("div");
+            elementoPista.className = "pista-item";
+
+            const numero = document.createElement("span");
+            numero.className = "pista-numero";
+            numero.textContent = `Pista ${cantidad}`;
+
+            const texto = document.createElement("div");
+            texto.textContent = pistaActual.texto;
+
+            const relacion = document.createElement("span");
+            relacion.className = "pista-relacion";
+            relacion.textContent = `Relación: ${pistaActual.relacion}`;
+
+            elementoPista.append(numero, texto, relacion);
+            pista.appendChild(elementoPista);
+        }
+
+        document.getElementById("iniciar").addEventListener("click", async () => {
+            try {
+                const resultado = await llamarApi("/api/iniciar", { idioma: idioma.value });
+                inicio.hidden = true;
+                zonaJuego.hidden = false;
+                mensaje.textContent = "";
+                respuesta.value = "";
+                respuesta.disabled = false;
+                document.getElementById("responder").disabled = false;
+                nuevaPartida.hidden = true;
+                respuestaFinal.textContent = "";
+                pista.replaceChildren();
+                mostrarPista(resultado.pista, resultado.estado.pistas_mostradas);
+                mostrarEstado(resultado.estado);
+            } catch (error) {
+                mensaje.textContent = error.message;
+            }
+        });
+
+        document.getElementById("responder").addEventListener("click", async () => {
+            try {
+                const resultado = await llamarApi("/api/responder", { respuesta: respuesta.value });
+                mensaje.textContent = resultado.correcta ? "Respuesta correcta." : "Respuesta incorrecta.";
+                mostrarEstado(resultado.estado);
+                if (resultado.estado.estado === "jugando") {
+                    const siguiente = await llamarApi("/api/pista");
+                    mostrarPista(siguiente.pista, siguiente.estado.pistas_mostradas);
+                }
+            } catch (error) {
+                mensaje.textContent = error.message;
+            }
+        });
+
+        nuevaPartida.addEventListener("click", () => {
+            inicio.hidden = false;
+            zonaJuego.hidden = true;
+        });
+    </script>
 
 </body>
 

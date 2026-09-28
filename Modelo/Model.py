@@ -96,14 +96,6 @@ print(normalizador.normalizar(texto))
 """
 
 class GestorWordNet:
-    BANCO_CATEGORIAS = [
-    "computer.n.01",
-    "snake.n.01",
-    "dog.n.01",
-    "sport.n.01",
-    "pencil.n.01",
-    ]
-
     def __init__(self, idioma: str) -> None:
         #aseguramos que solo sea ingles o español
         if idioma not in ("spa", "eng"):
@@ -111,18 +103,17 @@ class GestorWordNet:
         self.idioma = idioma
 
     def elegir_categoria(self):
-        elegibles = self.BANCO_CATEGORIAS[:]
+        elegibles = list(wn.all_synsets(pos="n"))
         random.shuffle(elegibles)
 
-        for identificador in elegibles:
+        for synset in elegibles:
             try:
-                synset = wn.synset(identificador)
-                pistas = self.construir_pistas(synset)
+                self.construir_pistas(synset)
                 return synset
             except (ValueError, LookupError):
                 continue
 
-        raise RuntimeError("Ninguna categoria del banco pudo generar 5 pistas")
+        raise RuntimeError("WordNet no encontro una categoria con 5 pistas validas")
 
     
     #Limpia los nombres dentro del synset para generar limpiamente las palabras para que se muestren en las pistas o respuestas
