@@ -1,3 +1,15 @@
+"""
+Autores: 
+
+Lopez Maldonado Alejandro
+Rojas Meneses Emily Victoria
+Unzueta Amador Zyanya Valeria
+Vega Escobar Hector Ivan
+
+"""
+
+
+
 import random
 import re
 import string
